@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import '@/lib/models'; // Import all models to ensure they're registered
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/industry-management';
 

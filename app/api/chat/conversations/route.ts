@@ -2,6 +2,9 @@ import { NextRequest } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { successResponse, errorResponse, unauthorizedError } from '@/lib/api-response';
 import Chat from '@/lib/models/Chat';
+import User from '@/lib/models/User';
+import Job from '@/lib/models/Job';
+import { Types } from 'mongoose';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,10 +18,13 @@ export async function GET(request: NextRequest) {
     const session = JSON.parse(sessionCookie.value);
 
     // Get all conversations for the user
+    // convert to ObjectId once to reuse in pipeline
+    const userObjectId = new Types.ObjectId(session._id);
+
     const conversations = await Chat.aggregate([
       {
         $match: {
-          $or: [{ senderId: { $oid: session._id } }, { receiverId: { $oid: session._id } }],
+          $or: [{ senderId: userObjectId }, { receiverId: userObjectId }],
         },
       },
       {
@@ -33,7 +39,7 @@ export async function GET(request: NextRequest) {
           otherUser: {
             $first: {
               $cond: [
-                { $eq: ['$senderId', { $oid: session._id }] },
+                { $eq: ['$senderId', userObjectId] },
                 '$receiverId',
                 '$senderId',
               ],
@@ -44,7 +50,7 @@ export async function GET(request: NextRequest) {
               $cond: [
                 {
                   $and: [
-                    { $eq: ['$receiverId', { $oid: session._id }] },
+                    { $eq: ['$receiverId', userObjectId] },
                     { $eq: ['$read', false] },
                   ],
                 },

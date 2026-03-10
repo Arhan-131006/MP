@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, X, LogOut, Settings, Briefcase, MessageSquare, BarChart3 } from 'lucide-react';
+import { Menu, X, LogOut, Settings, Briefcase, MessageSquare, BarChart3, UserPlus } from 'lucide-react';
 
 export function BuilderLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -26,6 +26,7 @@ export function BuilderLayout({ children }: { children: React.ReactNode }) {
   const menuItems = [
     { icon: BarChart3, label: 'Dashboard', href: '/dashboard/builder' },
     { icon: Briefcase, label: 'Jobs', href: '/dashboard/builder/jobs' },
+    { icon: UserPlus, label: 'Assign', href: '/dashboard/builder/assign' },
     { icon: MessageSquare, label: 'Messages', href: '/dashboard/builder/messages' },
     { icon: Settings, label: 'Profile', href: '/dashboard/builder/profile' },
   ];
@@ -71,6 +72,12 @@ export function BuilderLayout({ children }: { children: React.ReactNode }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <Link href="/dashboard/builder/profile">
+                <DropdownMenuItem>
+                  <Settings size={16} className="mr-2" />
+                  Profile
+                </DropdownMenuItem>
+              </Link>
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut size={16} className="mr-2" />
                 Logout

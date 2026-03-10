@@ -2,22 +2,25 @@ import { NextRequest } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { successResponse, errorResponse, unauthorizedError, notFoundError } from '@/lib/api-response';
 import Job from '@/lib/models/Job';
+import User from '@/lib/models/User';
 import { Types } from 'mongoose';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
+
+    const { id } = await params;
 
     const sessionCookie = request.cookies.get('auth_session');
     if (!sessionCookie) {
       return unauthorizedError();
     }
 
-    if (!Types.ObjectId.isValid(params.id)) {
+    if (!Types.ObjectId.isValid(id)) {
       return notFoundError('Job');
     }
 
-    const job = await Job.findById(params.id).populate('builderId', 'firstName lastName email industry');
+    const job = await Job.findById(id).populate('builderId', 'firstName lastName email industry');
 
     if (!job) {
       return notFoundError('Job');
@@ -30,9 +33,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
+
+    const { id } = await params;
 
     const sessionCookie = request.cookies.get('auth_session');
     if (!sessionCookie) {
@@ -41,11 +46,11 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     const session = JSON.parse(sessionCookie.value);
 
-    if (!Types.ObjectId.isValid(params.id)) {
+    if (!Types.ObjectId.isValid(id)) {
       return notFoundError('Job');
     }
 
-    const job = await Job.findById(params.id);
+    const job = await Job.findById(id);
     if (!job) {
       return notFoundError('Job');
     }
@@ -68,7 +73,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       if (status) updateData.status = status;
       if (priority) updateData.priority = priority;
 
-      const updatedJob = await Job.findByIdAndUpdate(params.id, updateData, { new: true }).populate(
+      // runValidators ensures status values (and other enums) are checked
+      const updatedJob = await Job.findByIdAndUpdate(id, updateData, { new: true, runValidators: true }).populate(
         'builderId',
         'firstName lastName email'
       );
@@ -91,14 +97,14 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         }
         job.status = 'assigned';
         await job.save();
-        const updated = await Job.findById(params.id).populate('builderId', 'firstName lastName email');
+        const updated = await Job.findById(id).populate('builderId', 'firstName lastName email');
         return successResponse(updated, 'Job accepted');
       }
 
       if (action === 'reject') {
         job.assignedVendors = job.assignedVendors.filter((v: any) => v.toString() !== session._id);
         await job.save();
-        const updated = await Job.findById(params.id).populate('builderId', 'firstName lastName email');
+        const updated = await Job.findById(id).populate('builderId', 'firstName lastName email');
         return successResponse(updated, 'Job rejected');
       }
 
@@ -112,9 +118,11 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
+
+    const { id } = await params;
 
     const sessionCookie = request.cookies.get('auth_session');
     if (!sessionCookie) {
@@ -123,11 +131,11 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     const session = JSON.parse(sessionCookie.value);
 
-    if (!Types.ObjectId.isValid(params.id)) {
+    if (!Types.ObjectId.isValid(id)) {
       return notFoundError('Job');
     }
 
-    const job = await Job.findById(params.id);
+    const job = await Job.findById(id);
     if (!job) {
       return notFoundError('Job');
     }
@@ -137,7 +145,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return errorResponse('You can only delete your own jobs', 403);
     }
 
-    await Job.findByIdAndDelete(params.id);
+    await Job.findByIdAndDelete(id);
 
     return successResponse(null, 'Job deleted successfully');
   } catch (error: any) {

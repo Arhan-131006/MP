@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { successResponse, errorResponse, unauthorizedError, validationError } from '@/lib/api-response';
 import Chat from '@/lib/models/Chat';
+import User from '@/lib/models/User';
+import Job from '@/lib/models/Job';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(request: NextRequest) {

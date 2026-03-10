@@ -72,6 +72,12 @@ export function WorkerLayout({ children }: { children: React.ReactNode }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <Link href="/dashboard/worker/profile">
+                <DropdownMenuItem>
+                  <Settings size={16} className="mr-2" />
+                  Profile
+                </DropdownMenuItem>
+              </Link>
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut size={16} className="mr-2" />
                 Logout

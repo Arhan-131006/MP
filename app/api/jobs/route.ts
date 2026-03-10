@@ -2,7 +2,9 @@ import { NextRequest } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { successResponse, errorResponse, unauthorizedError, validationError } from '@/lib/api-response';
 import Job from '@/lib/models/Job';
+import User from '@/lib/models/User';
 import { v4 as uuidv4 } from 'uuid';
+import mongoose from 'mongoose';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,21 +15,44 @@ export async function GET(request: NextRequest) {
       return unauthorizedError();
     }
 
-    const session = JSON.parse(sessionCookie.value);
+    let session;
+    try {
+      session = JSON.parse(decodeURIComponent(sessionCookie.value));
+    } catch (error) {
+      console.error('Invalid session cookie:', error);
+      return unauthorizedError();
+    }
+
     const { searchParams } = new URL(request.url);
     const builderId = searchParams.get('builderId');
     const status = searchParams.get('status');
+    const id = searchParams.get('id');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
     const skip = (page - 1) * limit;
     const query: any = {};
 
-    // Only builders can see their own jobs, vendors see jobs assigned to them
-    if (session.role === 'builder' && builderId) {
-      query.builderId = builderId;
+    // filter by specific job id if provided (scheduling fallback)
+    if (id) {
+      query._id = new mongoose.Types.ObjectId(id);
+    }
+
+    // Only builders see jobs they created by default, vendors see jobs assigned to them
+    if (session.role === 'builder') {
+      // builders can override to view all jobs by passing all=true
+      const allowAll = searchParams.get('all') === 'true';
+      if (!allowAll) {
+        query.builderId = builderId || session._id;
+      }
     } else if (session.role === 'vendor') {
-      query.assignedVendors = session._id;
+      const allowAll = searchParams.get('all') === 'true';
+      if (!allowAll) {
+        query.$or = [
+          { assignedVendors: session._id },
+          { builderId: session._id }
+        ];
+      }
     } else if (session.role === 'admin') {
       // Admins can see all jobs
     }
@@ -69,11 +94,17 @@ export async function POST(request: NextRequest) {
       return unauthorizedError();
     }
 
-    const session = JSON.parse(sessionCookie.value);
+    let session;
+    try {
+      session = JSON.parse(decodeURIComponent(sessionCookie.value));
+    } catch (error) {
+      console.error('Invalid session cookie:', error);
+      return unauthorizedError();
+    }
 
-    // Only builders or admins can create jobs
-    if (session.role !== 'builder' && session.role !== 'admin') {
-      return errorResponse('Only builders or admins can create jobs', 403);
+    // Builders, vendors, and admins can create jobs
+    if (session.role !== 'builder' && session.role !== 'vendor' && session.role !== 'admin') {
+      return errorResponse('Only builders, vendors, or admins can create jobs', 403);
     }
 
     const body = await request.json();

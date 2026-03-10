@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { successResponse, errorResponse, unauthorizedError, validationError } from '@/lib/api-response';
 import Payment from '@/lib/models/Payment';
+import User from '@/lib/models/User';
+import Job from '@/lib/models/Job';
 import { v4 as uuidv4 } from 'uuid';
 
 const PLATFORM_COMMISSION = 0.05; // 5%
@@ -45,10 +47,48 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(total / limit);
 
+    // Calculate summary statistics
+    const allPayments = await Payment.find(query);
+    const totalEarnings = allPayments
+      .filter((p) => p.status === 'completed')
+      .reduce((sum, p) => sum + p.netAmount, 0);
+    const totalPending = allPayments
+      .filter((p) => p.status === 'pending' || p.status === 'processing')
+      .reduce((sum, p) => sum + p.netAmount, 0);
+    const totalFailed = allPayments
+      .filter((p) => p.status === 'failed')
+      .reduce((sum, p) => sum + p.amount, 0);
+    const totalRefunded = allPayments
+      .filter((p) => p.status === 'refunded')
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    // Group by status for charting
+    const paymentsByStatus = allPayments.reduce((acc: any, payment) => {
+      const existing = acc.find((item: any) => item.status === payment.status);
+      if (existing) {
+        existing.count += 1;
+        existing.amount += payment.status === 'completed' ? payment.netAmount : payment.amount;
+      } else {
+        acc.push({
+          status: payment.status,
+          count: 1,
+          amount: payment.status === 'completed' ? payment.netAmount : payment.amount,
+        });
+      }
+      return acc;
+    }, []);
+
     return successResponse(
       {
         payments,
         pagination: { total, page, limit, totalPages },
+        summary: {
+          totalEarnings,
+          totalPending,
+          totalFailed,
+          totalRefunded,
+        },
+        paymentsByStatus,
       },
       'Payments retrieved successfully'
     );

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, MapPin } from 'lucide-react';
 
 interface Job {
   _id: string;
@@ -33,7 +33,8 @@ export default function BuilderJobsPage() {
   const fetchJobs = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/jobs');
+      // request all jobs, not just those created by this builder
+      const response = await fetch('/api/jobs?all=true');
       const data = await response.json();
 
       if (!response.ok) {
@@ -175,8 +176,13 @@ export default function BuilderJobsPage() {
                     </div>
                     <div className="flex gap-2">
                       <Link href={`/dashboard/builder/jobs/${job._id}`}>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" title="Edit job">
                           <Edit2 size={16} />
+                        </Button>
+                      </Link>
+                      <Link href={`/features/scheduling?jobId=${job._id}`}>
+                        <Button variant="outline" size="sm" title="Track job">
+                          <MapPin size={16} />
                         </Button>
                       </Link>
                       <Button
@@ -184,6 +190,7 @@ export default function BuilderJobsPage() {
                         size="sm"
                         onClick={() => handleDelete(job._id)}
                         className="hover:bg-red-50"
+                        title="Delete job"
                       >
                         <Trash2 size={16} className="text-red-600" />
                       </Button>

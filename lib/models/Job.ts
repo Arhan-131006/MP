@@ -6,7 +6,8 @@ export interface IJob extends Document {
   description: string;
   budget: number;
   deadline: Date;
-  status: 'open' | 'assigned' | 'in-progress' | 'completed' | 'cancelled';
+  // include both 'cancelled' and the older 'closed' for backwards compatibility
+  status: 'open' | 'assigned' | 'in-progress' | 'completed' | 'cancelled' | 'closed';
   assignedTo?: mongoose.Types.ObjectId;
   assignedVendors: mongoose.Types.ObjectId[];
   documents: string[];
@@ -43,7 +44,7 @@ const JobSchema = new Schema<IJob>(
     },
     status: {
       type: String,
-      enum: ['open', 'assigned', 'in-progress', 'completed', 'cancelled'],
+      enum: ['open', 'assigned', 'in-progress', 'completed', 'cancelled', 'closed'],
       default: 'open',
     },
     assignedTo: {

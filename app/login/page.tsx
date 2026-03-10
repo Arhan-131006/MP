@@ -58,10 +58,13 @@ export default function LoginPage() {
 
       const data = await response.json();
 
+      console.log('Login response status:', response.status);
+      console.log('Login response data:', data);
+
       if (!response.ok) {
         toast({
           title: 'Login Failed',
-          description: data.error || 'Please check your credentials',
+          description: data.error || `Error ${response.status}: Please check your credentials`,
           variant: 'destructive',
         });
         return;

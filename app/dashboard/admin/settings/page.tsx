@@ -46,7 +46,7 @@ export default function SettingsPage() {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('/api/admin/profile');
+      const response = await fetch('/api/profile');
       const data = await response.json();
 
       if (!response.ok) {
@@ -172,7 +172,7 @@ export default function SettingsPage() {
     setSaving(true);
 
     try {
-      const response = await fetch('/api/admin/change-password', {
+      const response = await fetch('/api/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -228,7 +228,7 @@ export default function SettingsPage() {
     setSaving(true);
 
     try {
-      const response = await fetch('/api/admin/profile', {
+      const response = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),

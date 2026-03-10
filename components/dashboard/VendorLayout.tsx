@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, X, LogOut, Settings, Briefcase, MessageSquare, BarChart3 } from 'lucide-react';
+import { Menu, X, LogOut, Settings, Briefcase, MessageSquare, BarChart3, Package, DollarSign } from 'lucide-react';
 
 export function VendorLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -26,6 +26,8 @@ export function VendorLayout({ children }: { children: React.ReactNode }) {
   const menuItems = [
     { icon: BarChart3, label: 'Dashboard', href: '/dashboard/vendor' },
     { icon: Briefcase, label: 'Jobs', href: '/dashboard/vendor/jobs' },
+    { icon: Package, label: 'Inventory', href: '/dashboard/vendor/inventory' },
+    { icon: DollarSign, label: 'Payments', href: '/dashboard/vendor/payments' },
     { icon: MessageSquare, label: 'Messages', href: '/dashboard/vendor/messages' },
     { icon: Settings, label: 'Profile', href: '/dashboard/vendor/profile' },
   ];
@@ -71,6 +73,12 @@ export function VendorLayout({ children }: { children: React.ReactNode }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <Link href="/dashboard/vendor/profile">
+                <DropdownMenuItem>
+                  <Settings size={16} className="mr-2" />
+                  Profile
+                </DropdownMenuItem>
+              </Link>
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut size={16} className="mr-2" />
                 Logout

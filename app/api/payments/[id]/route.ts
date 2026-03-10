@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { successResponse, errorResponse, unauthorizedError, notFoundError, validationError } from '@/lib/api-response';
 import Payment from '@/lib/models/Payment';
+import User from '@/lib/models/User';
 
 export async function PUT(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {

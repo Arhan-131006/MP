@@ -15,15 +15,17 @@ interface Schedule {
   jobId: string;
   jobTitle: string;
   jobCategory: string;
-  worker: { name: string; email: string; phone: string };
-  vendor: { name: string; email: string };
+  jobStatus: string; // Status from database
+  worker: { name: string; email: string; phone: string } | null;
+  vendor: { name: string; email: string } | null;
   startDate: string;
   endDate: string;
-  status: string;
+  status: string; // Scheduling status (pending/active/completed)
   acceptedAt: string;
   budget: number;
   description: string;
   location: string;
+  priority?: string;
 }
 
 interface ScheduleStats {
@@ -46,24 +48,76 @@ export default function Scheduling() {
     totalRevenue: 0,
   });
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'completed' | 'pending'>('all');
+  const [trackedJobId, setTrackedJobId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSchedules();
+    // read potential jobId from URL
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('jobId');
+    if (id) setTrackedJobId(id);
+    fetchSchedules(id || undefined);
   }, []);
 
   const fetchSchedules = async () => {
     try {
-      const response = await fetch('/api/scheduling');
-      const data = await response.json();
+      // Fetch all jobs to accurately calculate global stats, with a high limit to bypass default 20
+      let url = '/api/scheduling?limit=1000';
+      let response = await fetch(url);
+      let data = await response.json();
+
+      console.log('scheduling API response', response.status, data);
+
+      // if schedule endpoint fails or returns empty, fallback to jobs API
+      if (!response.ok || !data?.data?.schedules) {
+        console.warn('scheduling endpoint empty, falling back to jobs');
+        const jobsUrl = '/api/jobs?limit=1000';
+        response = await fetch(jobsUrl);
+        data = await response.json();
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to load schedules');
       }
 
-      const schedulesData = Array.isArray(data.data) ? data.data : [];
+      const jobsArray = data?.data?.schedules
+        ? data.data.schedules
+        : (data?.data && Array.isArray(data.data.jobs) ? data.data.jobs : []);
+
+      const schedulesData: Schedule[] = jobsArray.map((job: any) => ({
+        _id: job._id,
+        jobId: job.jobId || job._id,
+        jobTitle: job.jobTitle || job.title,
+        jobCategory: job.jobCategory || job.category,
+        jobStatus: job.jobStatus || job.status || 'open',
+        worker: job.worker || (job.assignedTo
+          ? { name: `${job.assignedTo.firstName} ${job.assignedTo.lastName}`, email: job.assignedTo.email, phone: job.assignedTo.phone || 'N/A' }
+          : null),
+        vendor: job.vendor || (job.builderId
+          ? { name: `${job.builderId.firstName} ${job.builderId.lastName}`, email: job.builderId.email }
+          : null),
+        startDate: job.startDate || job.createdAt || '',
+        endDate: job.endDate || job.deadline || '',
+        status:
+          job.status === 'completed'
+            ? 'completed'
+            : job.status === 'active' || job.status === 'in-progress'
+              ? 'active'
+              : 'pending',
+        acceptedAt: job.acceptedAt || job.createdAt || '',
+        budget: job.budget || 0,
+        description: job.description || '',
+        location: job.location || 'N/A',
+        priority: job.priority,
+      }));
+
       setSchedules(schedulesData);
       calculateStats(schedulesData);
+
+      if (schedulesData.length === 0) {
+        console.warn('No schedules/jobs returned from API');
+      }
     } catch (error: any) {
+      console.error('Fetch schedules error:', error);
       toast({
         title: 'Error',
         description: error.message,
@@ -115,7 +169,7 @@ export default function Scheduling() {
 
   const handleUpdateStatus = async (scheduleId: string, newStatus: string) => {
     try {
-      const response = await fetch(`/api/scheduling/${scheduleId}`, {
+      const response = await fetch(`/api/scheduling?jobId=${scheduleId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -129,11 +183,12 @@ export default function Scheduling() {
 
       toast({
         title: 'Success',
-        description: `Schedule marked as ${newStatus}`,
+        description: `Job status updated to ${newStatus}`,
       });
 
       fetchSchedules();
     } catch (error: any) {
+      console.error('Update status error:', error);
       toast({
         title: 'Error',
         description: error.message,
@@ -143,9 +198,13 @@ export default function Scheduling() {
   };
 
   const filteredSchedules = schedules.filter((schedule) => {
+    if (trackedJobId && schedule.jobId !== trackedJobId && schedule._id !== trackedJobId) return false;
     if (filterStatus === 'all') return true;
     return schedule.status === filterStatus;
   });
+
+  const trackedJob = trackedJobId ? schedules.find((s) => s.jobId === trackedJobId || s._id === trackedJobId) : null;
+  const showTrackingHeader = !!trackedJob;
 
   if (loading) {
     return (
@@ -161,8 +220,24 @@ export default function Scheduling() {
     <AdminLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Job Scheduling</h1>
-          <p className="text-muted-foreground mt-2">Track all accepted jobs and their schedules</p>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            {showTrackingHeader ? `Tracking Job: ${trackedJob?.jobTitle}` : 'Job Scheduling'}
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            {showTrackingHeader ? 'Viewing details for a single job' : 'Track all accepted jobs and their schedules'}
+          </p>
+          {showTrackingHeader && (
+            <Button
+              variant="link"
+              className="px-0 mt-2 text-blue-600 hover:text-blue-800"
+              onClick={() => {
+                setTrackedJobId(null);
+                window.history.replaceState({}, '', '/features/scheduling');
+              }}
+            >
+              ← View All Schedules
+            </Button>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -243,14 +318,15 @@ export default function Scheduling() {
                         <TableHead>Start Date</TableHead>
                         <TableHead>End Date</TableHead>
                         <TableHead>Budget</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>DB Status</TableHead>
+                        <TableHead>Schedule Status</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {!Array.isArray(filteredSchedules) || filteredSchedules.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                          <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                             No schedules found
                           </TableCell>
                         </TableRow>
@@ -263,17 +339,29 @@ export default function Scheduling() {
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-col">
-                                <span className="font-medium flex items-center gap-1">
-                                  <User className="w-4 h-4" />
-                                  {schedule.worker.name}
-                                </span>
-                                <span className="text-xs text-muted-foreground">{schedule.worker.phone}</span>
+                                {schedule.worker ? (
+                                  <>
+                                    <span className="font-medium flex items-center gap-1">
+                                      <User className="w-4 h-4" />
+                                      {schedule.worker.name}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">{schedule.worker.phone}</span>
+                                  </>
+                                ) : (
+                                  <span className="text-muted-foreground">Unassigned</span>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{schedule.vendor.name}</div>
-                                <div className="text-xs text-muted-foreground">{schedule.vendor.email}</div>
+                                {schedule.vendor ? (
+                                  <>
+                                    <div className="font-medium">{schedule.vendor.name}</div>
+                                    <div className="text-xs text-muted-foreground">{schedule.vendor.email}</div>
+                                  </>
+                                ) : (
+                                  <span className="text-muted-foreground">No vendor</span>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell>
@@ -289,6 +377,11 @@ export default function Scheduling() {
                               </div>
                             </TableCell>
                             <TableCell className="font-bold">${schedule.budget.toFixed(2)}</TableCell>
+                            <TableCell>
+                              <Badge className={getStatusColor(schedule.jobStatus)}>
+                                {schedule.jobStatus.charAt(0).toUpperCase() + schedule.jobStatus.slice(1)}
+                              </Badge>
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 {getStatusIcon(schedule.status)}
@@ -356,7 +449,7 @@ export default function Scheduling() {
                         <div className="grid grid-cols-2 gap-2 mt-2 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <User className="w-4 h-4" />
-                            {schedule.worker.name}
+                            {schedule.worker ? schedule.worker.name : 'Unassigned'}
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />

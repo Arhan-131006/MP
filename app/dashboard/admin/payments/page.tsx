@@ -448,7 +448,7 @@ export default function AdminPaymentsPage() {
                     <span className="font-semibold">Transaction:</span> {editingPayment.transactionId}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    <span className="font-semibold">User:</span> {editingPayment.userId.firstName} {editingPayment.userId.lastName}
+                    <span className="font-semibold">User:</span> {editingPayment.userId ? `${editingPayment.userId.firstName} ${editingPayment.userId.lastName}` : 'N/A'}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     <span className="font-semibold">Amount:</span> ${editingPayment.amount.toFixed(2)}
@@ -584,8 +584,8 @@ export default function AdminPaymentsPage() {
                         <TableCell className="font-mono text-sm">{payment.transactionId}</TableCell>
                         <TableCell>
                           <div>
-                            <p className="font-medium">{`${payment.userId.firstName} ${payment.userId.lastName}`}</p>
-                            <p className="text-xs text-muted-foreground">{payment.userId.email}</p>
+                            <p className="font-medium">{payment.userId ? `${payment.userId.firstName} ${payment.userId.lastName}` : 'N/A'}</p>
+                            <p className="text-xs text-muted-foreground">{payment.userId?.email || 'N/A'}</p>
                           </div>
                         </TableCell>
                         <TableCell className="font-semibold">${payment.amount.toFixed(2)}</TableCell>

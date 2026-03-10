@@ -61,12 +61,12 @@ export async function POST(request: NextRequest) {
     // In production, create JWT token and set secure cookie
     const response = successResponse(userData, 'Login successful', 200);
 
-    // Set secure session cookie (simplified - use iron-session in production)
     response.cookies.set('auth_session', JSON.stringify(userData), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
     });
 
     return response;

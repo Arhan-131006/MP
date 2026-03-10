@@ -173,17 +173,27 @@ export default function VendorDashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Manage assigned jobs and communications</CardDescription>
+            <CardDescription>Manage jobs, inventory, and payments</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <Link href="/dashboard/vendor/jobs">
               <Button variant="outline" className="w-full bg-transparent">
-                View Assigned Jobs
+                View All Jobs
               </Button>
             </Link>
-            <Link href="/dashboard/vendor/messages">
+            <Link href="/dashboard/vendor/jobs/create">
               <Button variant="outline" className="w-full bg-transparent">
-                Messages
+                Create Job Request
+              </Button>
+            </Link>
+            <Link href="/dashboard/vendor/inventory">
+              <Button variant="outline" className="w-full bg-transparent">
+                Inventory
+              </Button>
+            </Link>
+            <Link href="/dashboard/vendor/payments">
+              <Button variant="outline" className="w-full bg-transparent">
+                Payments
               </Button>
             </Link>
             <Link href="/dashboard/vendor/profile">

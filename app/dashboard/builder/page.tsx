@@ -16,9 +16,21 @@ interface DashboardStats {
   jobsByStatus: Array<{ status: string; count: number }>;
 }
 
+interface AvailableJob {
+  _id: string;
+  title: string;
+  description: string;
+  budget: number;
+  deadline: string;
+  status: string;
+  category: string;
+  priority: string;
+}
+
 export default function BuilderDashboard() {
   const { toast } = useToast();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [availableJobs, setAvailableJobs] = useState<AvailableJob[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -68,6 +80,13 @@ export default function BuilderDashboard() {
         totalBudget,
         jobsByStatus,
       });
+
+      // Fetch open jobs for the available jobs section
+      const openJobsResponse = await fetch('/api/jobs?status=open&limit=50');
+      const openJobsData = await openJobsResponse.json();
+      if (openJobsResponse.ok) {
+        setAvailableJobs(openJobsData.data.jobs || []);
+      }
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -178,7 +197,7 @@ export default function BuilderDashboard() {
             <CardTitle>Quick Actions</CardTitle>
             <CardDescription>Manage your jobs and communications</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Link href="/dashboard/builder/jobs">
               <Button variant="outline" className="w-full bg-transparent">
                 View All Jobs
@@ -189,11 +208,81 @@ export default function BuilderDashboard() {
                 Create Job
               </Button>
             </Link>
+            <Link href="/dashboard/builder/assign">
+              <Button variant="outline" className="w-full bg-transparent">
+                Assign Jobs
+              </Button>
+            </Link>
             <Link href="/dashboard/builder/messages">
               <Button variant="outline" className="w-full bg-transparent">
                 Messages
               </Button>
             </Link>
+          </CardContent>
+        </Card>
+
+        {/* Available Jobs */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Available Jobs</CardTitle>
+            <CardDescription>Open jobs available for management and assignment</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {availableJobs.length > 0 ? (
+              <div className="space-y-4">
+                {availableJobs.map((job) => (
+                  <div
+                    key={job._id}
+                    className="border rounded-lg p-4 hover:bg-accent transition-colors"
+                  >
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg">{job.title}</h3>
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          {job.description}
+                        </p>
+                        <div className="flex gap-2 mt-3 flex-wrap">
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                            {job.category}
+                          </span>
+                          <span
+                            className={`text-xs px-2 py-1 rounded ${
+                              job.priority === 'urgent'
+                                ? 'bg-red-100 text-red-700'
+                                : job.priority === 'high'
+                                ? 'bg-orange-100 text-orange-700'
+                                : job.priority === 'medium'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-green-100 text-green-700'
+                            }`}
+                          >
+                            {job.priority}
+                          </span>
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                            {job.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-lg">${job.budget}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Due: {new Date(job.deadline).toLocaleDateString()}
+                        </div>
+                        <Link href={`/dashboard/builder/jobs/${job._id}`} className="mt-2 block">
+                          <Button size="sm" variant="outline">
+                            View Details
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No available jobs at the moment</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

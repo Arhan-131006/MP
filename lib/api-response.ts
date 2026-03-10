@@ -52,11 +52,11 @@ export function validationError(errors: Record<string, string>): NextResponse<Ap
   );
 }
 
-export function unauthorizedError(): NextResponse<ApiResponse> {
+export function unauthorizedError(message: string = 'Unauthorized'): NextResponse<ApiResponse> {
   return NextResponse.json(
     {
       success: false,
-      message: 'Unauthorized',
+      message,
       error: 'User is not authenticated',
       statusCode: 401,
     },

@@ -23,6 +23,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
 
+  const handleTeamManagementClick = () => {
+    console.log('Team Management button clicked');
+    router.push('/features/team-management');
+  };
+
   const menuItems = [
     { icon: BarChart3, label: 'Dashboard', href: '/dashboard/admin' },
     { icon: Users, label: 'Users', href: '/dashboard/admin/users' },
@@ -78,14 +83,20 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
           {/* Management Items */}
           {managementItems.map((item) => (
-            <Link
+            <button
               key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-primary-foreground/10 transition-colors"
+              onClick={() => {
+                if (item.label === 'Team Management') {
+                  handleTeamManagementClick();
+                } else {
+                  router.push(item.href);
+                }
+              }}
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-primary-foreground/10 transition-colors text-left"
             >
               <item.icon size={20} />
               {sidebarOpen && <span>{item.label}</span>}
-            </Link>
+            </button>
           ))}
         </nav>
 

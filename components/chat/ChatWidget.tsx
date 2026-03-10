@@ -21,6 +21,7 @@ interface ChatWidgetProps {
   conversationId: string;
   otherUserId: string;
   otherUserName: string;
+  jobId?: string; // optional context for job-related conversations
   onClose?: () => void;
 }
 
@@ -28,6 +29,7 @@ export function ChatWidget({
   conversationId,
   otherUserId,
   otherUserName,
+  jobId,
   onClose,
 }: ChatWidgetProps) {
   const { toast } = useToast();
@@ -77,13 +79,16 @@ export function ChatWidget({
     setLoading(true);
 
     try {
+      const body: any = {
+        receiverId: otherUserId,
+        message: newMessage,
+      };
+      if (jobId) body.jobId = jobId; // include context if provided
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          receiverId: otherUserId,
-          message: newMessage,
-        }),
+        body: JSON.stringify(body),
       });
 
       const data = await response.json();

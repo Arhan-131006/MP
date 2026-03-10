@@ -301,8 +301,11 @@ export default function JobManagement() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="open">Open</SelectItem>
+                      <SelectItem value="assigned">Assigned</SelectItem>
                       <SelectItem value="in-progress">In Progress</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                      {/* legacy value */}
                       <SelectItem value="closed">Closed</SelectItem>
                     </SelectContent>
                   </Select>
@@ -351,9 +354,11 @@ export default function JobManagement() {
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                             job.status === 'open' ? 'bg-green-100 text-green-800' :
+                            job.status === 'assigned' ? 'bg-yellow-100 text-yellow-800' :
                             job.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
                             job.status === 'completed' ? 'bg-gray-100 text-gray-800' :
-                            'bg-red-100 text-red-800'
+                            job.status === 'cancelled' || job.status === 'closed' ? 'bg-red-100 text-red-800' :
+                            'bg-red-100 text-red-800' // fallback for any unknown status
                           }`}>
                             {job.status}
                           </span>
